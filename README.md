@@ -86,7 +86,7 @@ Son but et de, en fonction des paramètres qui lui sont passés, "construire" un
 
 #### Exemples <a name="exemples"></a>
 
-L'objectif de la mise en place du support des décorateurs n'est pas particulièrement d'en mettre en place, mais plutôt d'en utiliser des existants, néanmoins pour bien en comprendre le fonctionnement, créons en un : 
+L'objectif de la mise en place du support des décorateurs n'est pas particulièrement d'en créer de nouveaux, mais plutôt d'en utiliser des existants, néanmoins pour bien en comprendre le fonctionnement, créons en un : 
 ```javascript
 	function MonDecorator(obj) {
 		return function(target) {
