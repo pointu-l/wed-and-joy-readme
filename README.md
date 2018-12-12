@@ -305,6 +305,68 @@ Le code est plus facile à comprendre, et ne comprend plus de lignes inutiles. E
 
 ## TypeORM, les décorateurs et babel <a name="tybano"></a>
 
+Pour installer babel et le rendre compatible avec typeORM, il est nécessaire de vérifier dans le package.json que babel et ses composants sont en version 7.2.0 ou compatible.
+ Si le package.json est deja près ou récuperé sur le github du projet Wed&Joy, alors il suffit de faire un npm install pour installer les dépendances de babel.
+ Il est également important de reproduire la configuration décrite dans le fichier de configuration de babel : babelrc.
+ Ce fichier déclare les "presets" (le modèle de compilation) et "plugins" (fonctionnalité additionelle comme le support des décorateurs).
+ Cette configuration doit impérativement être respectée sous peine de perdre la prise en charge de certaines fonctionnalités, utilisées par le serveur, l'orm ou vue.js.
+
+ package.json, dépendances
+ ```json
+ "dependencies": {
+     "@decorators/di": "^1.0.2",
+     "@decorators/express": "^2.3.0",
+     "babel-core": "^7.0.0-bridge.0",
+     "body-parser": "^1.18.3",
+     "connect-history-api-fallback": "^1.5.0",
+     "crypto": "^1.0.1",
+     "express": "~4.16.0",
+     "express-session": "^1.15.6",
+     "jsonwebtoken": "^8.4.0",
+     "morgan": "^1.9.1",
+     "mysql": "^2.14.1",
+     "nodemon": "^1.18.6",
+     "passport": "^0.4.0",
+     "passport-jwt": "^4.0.0",
+     "passport-local": "^1.0.0",
+     "pug": "^2.0.3",
+     "session-file-store": "^1.2.0",
+     "typeorm": "^0.2.6"
+   },
+ ```
+ package.json, dépendances de developement
+ ```json
+ "devDependencies": {
+     "@babel/cli": "^7.2.0",
+     "@babel/core": "^7.2.0",
+     "@babel/node": "^7.2.0",
+     "@babel/plugin-proposal-class-properties": "^7.2.0",
+     "@babel/plugin-proposal-decorators": "^7.2.0",
+     "@babel/preset-env": "^7.2.0",
+     "babel-plugin-transform-function-parameter-decorators": "^1.2.0",
+     "babel-polyfill": "^6.26.0",
+     "babel-preset-minify": "^0.5.0"
+   }
+ ```
+
+ .babelrc
+ ```json
+ {
+   "presets": [
+     "@babel/preset-env"
+   ],
+   "plugins": [
+     [ "transform-function-parameter-decorators" ],
+     [ "@babel/plugin-proposal-decorators", { "legacy": true } ],
+     [ "@babel/plugin-proposal-class-properties", { "loose": true } ]
+
+   ],
+   "ignore": [
+
+   ]
+ }
+ ```
+ 
 ### Babel <a name="babel"></a>
 Revenons sur babel, partie importante de l'architecture de ce projet.
 
