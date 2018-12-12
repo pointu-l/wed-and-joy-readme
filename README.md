@@ -4,7 +4,9 @@
 1. [Introduction](#intro)
 2. [Fonctionnement](#fonctionnement)
 	1. [Exemple](#fonctionnement.exemple)
-3. [Installer et utiliser TypeORM, babel avec NodeJS (sans typescript !)](#tybano)
+3. [Le javascript async moderne](#modernjs)
+
+4. [Installer et utiliser TypeORM, babel avec NodeJS (sans typescript !)](#tybano)
 	1. [Babel](#babel)
 	2. [Les décorateurs](#decorators)
 		1. [Exemples](#exemples)
@@ -67,6 +69,205 @@ La configuration de babel se fait grace au fichier .babelrc ou babel.config.js, 
 > **Exception**
 La minification du code des entités de TypeORM est à tout prix à éviter. En effet si babel minify le code des classes modèles, il va remplacer tous les noms de variables par des lettres uniques ou double pour gagner de la place. C'est très bien pour notre code "controlleur" mais pour l'ORM c'est catastrophique (il va créer une table "a" "b" "c" etc.)
 	**C'est pour cette raison qu'il y a une double compilation dans le package.json**
+
+## Le javascript asynchrone moderne
+### L'asynchrone historiquement
+
+Javascript est un langage très fortement asynchrone. A l'origine, il est possible de créer un certain type de fonction en javascript "classique" qui sont dites "asynchrones". Prenons le code suivant : 
+
+```javascript
+/*
+ * Imaginons que cette fonction soit async. Ce n'est pas le cas, en js "classique" il est 
+ * assez compliqué d'en créer 
+ */
+function maFunctionAsync() {
+	console.log("MA ASYNC")
+}
+
+console.log("Avant")
+maFunctionAsync();
+console.log("Après")
+```
+Nous produit le résultat : 
+```javascript
+Avant
+Après
+MA ASYNC
+```
+
+L'avantage est que si le resultat de l'opération n'est pas nécessaire pour la suite de l'éxecution du programme,
+il est possible de continuer sans en attendre la fin. C'est également cette capacité qui va permettre aux developpeurs d'optimiser au maximum leur application.
+
+Néanmoins, il est souvent nécessaire d'effectuer des opérations après l'opération (pour traiter son résultat par exemple) ainsi, notre code devient :
+
+```javascript
+/*
+ * Imaginons que cette fonction soit async. Ce n'est pas le cas, en js "classique" il est 
+ * assez compliqué d'en créer 
+ */
+function maFunctionAsync(callback) {
+	console.log("MA ASYNC")
+	// La fonction fait son travail, puis appelle la fonction "callback" passée en paramètre
+	callback("je suis une data");
+}
+
+console.log("Avant")
+maFunctionAsync(function(data) {
+	console.log(data);
+	console.log("Programme terminé !");	
+});
+console.log("Après")
+```
+
+Affichera : 
+```javascript
+	Avant
+	Après
+	MA ASYNC
+	Je suis une data
+	Programme terminé !
+```
+
+Mais cela a également posé un gros problème d'architecture de code pendant plusieurs années : le callback hell. Voici un exemple fictif :
+```javascript
+	var query = db->("SELECT * FROM USERS");
+	query.on("data", function(data) {
+		data.on("result", function(result) {
+			
+			var final = []
+			result.forEach(function() {
+				
+				
+				
+				if (result.id) {
+					final.push(result.id)	
+					result.isOk = true;
+					
+					var newQuery = db->("UPDATE USER ...);
+					newQuery.on('end', function(error) {
+						if (!error)
+							res.send("ok !");
+						
+					});
+				}
+			});
+			
+			
+		});
+	});
+```
+
+Ca devient vite compliqué ! Car on a accès aux données de l'appel asynchrone QUE dans sa callback. De facto tout ce qui utilise la donnée initiale doit être dans une callback, ce qui fait des callback dans des callback etc. 
+
+> Anecdote : Un ami avait fait un énorme code JS pris par le "callback hell" et en était venu à réduire son niveau d'indentation jusqu'à 1 espace pour limiter le scrolling horizontal de son editeur. Lui faire découvrir les promises et l'async await a surement changé sa vie pour toujours :)
+
+### Les promises
+Les promises, c'est la fonctionnalité ES6 de javascript la plus hot et qui était la plus nécessaire. Elle vient apporter un peut d'ordre à ces brutes de callback.
+Les promises sont incontournables dans ce projet. Elles sont omniprésentes dans TypeORM et Axios (qui permet de faire des requêtes HTTP "ajax" depuis la Vue.js)
+
+Utiliser une promise :
+```javascript
+	maFonctionAsync(param).then(function() {
+		console.log("Je suis dans ma callback !")
+	});
+```
+> Note : parfois, surtout pour axios, il peut être utile d'ajouter .catch en cas d'erreur
+```javascript
+axios.post(...)
+	.then(function)
+	.catch(function)
+```
+
+Avec un peut de travail, notre callback hell de tout à l'heure deviendrait en gros :
+```javascript
+	
+	query
+	.then(function(data) {
+		data.then(...)	
+	})
+	...
+
+```
+
+Pour créer une promise, c'est finalement très simple :
+```javascript
+   function monAppelSql() {
+		return new Promise(function(resolve, reject) {
+			db->query.on('result', resolve);
+		});
+   }
+
+   const maPromiseSQl = monAppelSql();
+	console.log(typeof maPromiseSQL) // "Promise"
+	maPromiseSQL.then(function(data) {
+		// ...
+	});
+```
+
+C'est une modification bienvenue, car elle apporte une certaine constance à l'asynchrone et un type spécial "Promise" pour le reconnaitre.
+Ca ne résout par contre pas le problème du callback hell, les callback sont controllées mais sont toujours présentes.
+
+### Async & Await
+
+Async Await est une grosse évolution du comportement de l'asynchronise javascript.
+Commencons par async.
+Le mot clé async permet de simplifier la création de fonction asynchrone. Ainsi :
+```javascript
+	function async maFunctionAsync() {
+		console.log("Après")
+		// ...	
+	}
+	
+	maFunctionAsync()
+	console.log("Avant")
+	
+	// Affiche :
+	// Avant
+	// Après
+```
+
+> Note : Async peut aussi se mettre sur les fonction anonymes passées à then, c'est très interessant quand on le couple à await.
+
+Parlons d'await, le compagnon d'async.
+Await permet d'absorber le promise en quelque sorte. Grace aux promises les callbacks ont toujours la même forme : une fonction passée à then. Si le mot clé "await" est placé devant une instruction qui devrait avoir un .then, alors le code suivant : 
+
+```javascript
+asyncFunc().then(data) {
+	console.log(data);	
+}
+```
+devient :
+```javascript
+const data = await asyncFunc();
+console.log(data);
+```
+
+On tient donc notre anti callback hell :)
+
+Première règle, l'await ne sort jamais sans son async. L'await ne peut être utilisé QUE dans une fonction async. Ce n'est pas souvent un problème, en general, par exemple pour une route express, il suffit d'ajouter "async" devant la fonction parente car express se fiche pas mal que la fonction soit async ou pas.
+
+Exemple :
+```javascript
+// Dans un controlleur ...
+@Get("/maHome")
+homeAction(req, res) {
+	this.userRepository.find({where: { id: 4 }).then(function(user) {
+		res.send(JSON.stringify(user));	
+	});
+}
+
+```
+Devient :
+```javascript
+// Dans un controlleur ...
+@Get("/maHome")
+async homeAction(req, res) {
+	const user = await this.userRepository.find({where: { id: 4 });
+	res.send(JSON.stringify(user));
+}
+
+```
+Le code est plus facile à comprendre, et ne comprend plus de lignes inutiles. Evidement c'est à utiliser que quand l'asynchrone n'est pas nécessaire, car il s'agit néanmoins d'un comportement très utile selon les cas.
 
 ## TypeORM, les décorateurs et babel <a name="tybano"></a>
 
