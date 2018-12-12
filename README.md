@@ -1,5 +1,39 @@
 # Wed&Joy
 
+
+## Structure de l'app
+
+```text
+Wed&Joy tree
+├── app ➜ Résultat de la compilation du serveur
+├── database ➜ Dossier pour le container mariadb
+│   ├── config ➜ Contient les fichiers de configuration de mariadb
+│   ├── volume ➜ Contient les données de la base de donnée. Permet la persistance
+├── public ➜ Le dossier public du serveur.
+			  Contient tout ce qui sera utilisé par le navigateur(images, HTML/css, javascript)
+│   └── Vue ➜ Le dossier de notre application Vue
+│       ├── dist ➜ Resultat de la compilation du client
+│       │   ├── css
+│       │   └── js
+│       └── src ➜ Code de la vue
+│           ├── assets ➜ Assets statiques de la vue
+│           ├── components ➜ Components vue.js
+│           ├── layouts ➜ Layouts utilisés avec children de vue router
+│           └── views ➜ Contient nos "pages"
+│               ├── adminUser
+│               ├── customProviders
+│               ├── messages
+│               └── todo
+├── sessions ➜ Contient les fichiers de sessions
+├── src ➜ Code du serveur
+│   ├── App ➜ Contient toutes les fonctions de base comme le lancement du serveur ou la configuration des stratégies de passport
+│   │   └── Abstracts ➜ Contient les classes abstraites comme AbstractEntity
+│   ├── Controllers ➜ Contient les controlleurs (classes)
+│   ├── Entities ➜ Contient les entités (classes)
+│   └── Middlewares ➜ Contient les middlewares (classes)
+```
+
+
 ## Table des matières
 1. [Introduction](#intro)
 2. [Fonctionnement](#fonctionnement)
@@ -24,7 +58,7 @@ Wed&Joy utilise les technologies principales suivantes :
 
 - NodeJS et expressJS pour le backend avec babel
 - VueJS pour le frontend avec Vue Loader (webpack + babel spécial Vue)
-- MariaDB pour la base de donnée (dans un container Docker pour le developpement) 
+- MariaDB pour la base de donnée (dans un container Docker pour le developpement)
 
 ## Fonctionnement <a name="fonctionnement"></a>
 Pour permettre à l'application, que ce soit le serveur ou le frontend, de fonctionner correctement il est nécessaire d'utiliser le transpilleur babel.
@@ -57,7 +91,7 @@ return _createClass(a, [{
  // ... D'autres declaration de fonctions "Action" dans ce tableau
 ```
 Cette version est plus complexe à écrire pour un developpeur mais est bien plus rapide pour une machine.
-Un point faible du javascript moderne est : 
+Un point faible du javascript moderne est :
 
 - Les fonctionnalitées sont experimentales et causent souvent des ralentissements du language
 - Leur fonctionnement devient très dépendant de la version de node qui va executer le projet, ou le navigateur qui va executer l'application vue. En effet pour le second cas, seul les version les plus récentes des navigateurs permettent une execution des fonctionnalités ES2016 natives.
@@ -73,12 +107,12 @@ La minification du code des entités de TypeORM est à tout prix à éviter. En 
 ## Le javascript asynchrone moderne
 ### L'asynchrone historiquement
 
-Javascript est un langage très fortement asynchrone. A l'origine, il est possible de créer un certain type de fonction en javascript "classique" qui sont dites "asynchrones". Prenons le code suivant : 
+Javascript est un langage très fortement asynchrone. A l'origine, il est possible de créer un certain type de fonction en javascript "classique" qui sont dites "asynchrones". Prenons le code suivant :
 
 ```javascript
 /*
- * Imaginons que cette fonction soit async. Ce n'est pas le cas, en js "classique" il est 
- * assez compliqué d'en créer 
+ * Imaginons que cette fonction soit async. Ce n'est pas le cas, en js "classique" il est
+ * assez compliqué d'en créer
  */
 function maFunctionAsync() {
 	console.log("MA ASYNC")
@@ -88,7 +122,7 @@ console.log("Avant")
 maFunctionAsync();
 console.log("Après")
 ```
-Nous produit le résultat : 
+Nous produit le résultat :
 ```javascript
 Avant
 Après
@@ -102,8 +136,8 @@ Néanmoins, il est souvent nécessaire d'effectuer des opérations après l'opé
 
 ```javascript
 /*
- * Imaginons que cette fonction soit async. Ce n'est pas le cas, en js "classique" il est 
- * assez compliqué d'en créer 
+ * Imaginons que cette fonction soit async. Ce n'est pas le cas, en js "classique" il est
+ * assez compliqué d'en créer
  */
 function maFunctionAsync(callback) {
 	console.log("MA ASYNC")
@@ -114,12 +148,12 @@ function maFunctionAsync(callback) {
 console.log("Avant")
 maFunctionAsync(function(data) {
 	console.log(data);
-	console.log("Programme terminé !");	
+	console.log("Programme terminé !");
 });
 console.log("Après")
 ```
 
-Affichera : 
+Affichera :
 ```javascript
 	Avant
 	Après
@@ -133,31 +167,31 @@ Mais cela a également posé un gros problème d'architecture de code pendant pl
 	var query = db->("SELECT * FROM USERS");
 	query.on("data", function(data) {
 		data.on("result", function(result) {
-			
+
 			var final = []
 			result.forEach(function() {
-				
-				
-				
+
+
+
 				if (result.id) {
-					final.push(result.id)	
+					final.push(result.id)
 					result.isOk = true;
-					
+
 					var newQuery = db->("UPDATE USER ...");
 					newQuery.on('end', function(error) {
 						if (!error)
 							res.send("ok !");
-						
+
 					});
 				}
 			});
-			
-			
+
+
 		});
 	});
 ```
 
-Ca devient vite compliqué ! Car on a accès aux données de l'appel asynchrone QUE dans sa callback. De facto tout ce qui utilise la donnée initiale doit être dans une callback, ce qui fait des callback dans des callback etc. 
+Ca devient vite compliqué ! Car on a accès aux données de l'appel asynchrone QUE dans sa callback. De facto tout ce qui utilise la donnée initiale doit être dans une callback, ce qui fait des callback dans des callback etc.
 
 > Anecdote : Un ami avait fait un énorme code JS pris par le "callback hell" et en était venu à réduire son niveau d'indentation jusqu'à 1 espace pour limiter le scrolling horizontal de son editeur. Lui faire découvrir les promises et l'async await a surement changé sa vie pour toujours :)
 
@@ -180,10 +214,10 @@ axios.post(...)
 
 Avec un peut de travail, notre callback hell de tout à l'heure deviendrait en gros :
 ```javascript
-	
+
 	query
 	.then(function(data) {
-		data.then(...)	
+		data.then(...)
 	})
 	...
 
@@ -215,12 +249,12 @@ Le mot clé async permet de simplifier la création de fonction asynchrone. Ains
 ```javascript
 	function async maFunctionAsync() {
 		console.log("Après")
-		// ...	
+		// ...
 	}
-	
+
 	maFunctionAsync()
 	console.log("Avant")
-	
+
 	// Affiche :
 	// Avant
 	// Après
@@ -229,11 +263,11 @@ Le mot clé async permet de simplifier la création de fonction asynchrone. Ains
 > Note : Async peut aussi se mettre sur les fonction anonymes passées à then, c'est très interessant quand on le couple à await.
 
 Parlons d'await, le compagnon d'async.
-Await permet d'absorber le promise en quelque sorte. Grace aux promises les callbacks ont toujours la même forme : une fonction passée à then. Si le mot clé "await" est placé devant une instruction qui devrait avoir un .then, alors le code suivant : 
+Await permet d'absorber le promise en quelque sorte. Grace aux promises les callbacks ont toujours la même forme : une fonction passée à then. Si le mot clé "await" est placé devant une instruction qui devrait avoir un .then, alors le code suivant :
 
 ```javascript
 asyncFunc().then(data) {
-	console.log(data);	
+	console.log(data);
 }
 ```
 devient :
@@ -252,7 +286,7 @@ Exemple :
 @Get("/maHome")
 homeAction(req, res) {
 	this.userRepository.find({where: { id: 4 }).then(function(user) {
-		res.send(JSON.stringify(user));	
+		res.send(JSON.stringify(user));
 	});
 }
 
@@ -270,75 +304,14 @@ async homeAction(req, res) {
 Le code est plus facile à comprendre, et ne comprend plus de lignes inutiles. Evidement c'est à utiliser que quand l'asynchrone n'est pas nécessaire, car il s'agit néanmoins d'un comportement très utile selon les cas.
 
 ## TypeORM, les décorateurs et babel <a name="tybano"></a>
-Pour installer babel et le rendre compatible avec typeORM, il est nécessaire de vérifier dans le package.json que babel et ses composants sont en version 7.2.0 ou compatible.
-Si le package.json est deja près ou récuperé sur le github du projet Wed&Joy, alors il suffit de faire un npm install pour installer les dépendances de babel.
-Il est également important de reproduire la configuration décrite dans le fichier de configuration de babel : babelrc.
-Ce fichier déclare les "presets" (le modèle de compilation) et "plugins" (fonctionnalité additionelle comme le support des décorateurs).
-Cette configuration doit impérativement être respectée sous peine de perdre la prise en charge de certaines fonctionnalités, utilisées par le serveur, l'orm ou vue.js.
-
-package.json, dépendances
-```json
-"dependencies": {
-    "@decorators/di": "^1.0.2",
-    "@decorators/express": "^2.3.0",
-    "babel-core": "^7.0.0-bridge.0",
-    "body-parser": "^1.18.3",
-    "connect-history-api-fallback": "^1.5.0",
-    "crypto": "^1.0.1",
-    "express": "~4.16.0",
-    "express-session": "^1.15.6",
-    "jsonwebtoken": "^8.4.0",
-    "morgan": "^1.9.1",
-    "mysql": "^2.14.1",
-    "nodemon": "^1.18.6",
-    "passport": "^0.4.0",
-    "passport-jwt": "^4.0.0",
-    "passport-local": "^1.0.0",
-    "pug": "^2.0.3",
-    "session-file-store": "^1.2.0",
-    "typeorm": "^0.2.6"
-  },
-```
-package.json, dépendances de developement
-```json
-"devDependencies": {
-    "@babel/cli": "^7.2.0",
-    "@babel/core": "^7.2.0",
-    "@babel/node": "^7.2.0",
-    "@babel/plugin-proposal-class-properties": "^7.2.0",
-    "@babel/plugin-proposal-decorators": "^7.2.0",
-    "@babel/preset-env": "^7.2.0",
-    "babel-plugin-transform-function-parameter-decorators": "^1.2.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-minify": "^0.5.0"
-  }
-```
-
-.babelrc
-```json
-{
-  "presets": [
-    "@babel/preset-env"
-  ],
-  "plugins": [
-    [ "transform-function-parameter-decorators" ],
-    [ "@babel/plugin-proposal-decorators", { "legacy": true } ],
-    [ "@babel/plugin-proposal-class-properties", { "loose": true } ]
-
-  ],
-  "ignore": [
-
-  ]
-}
-```
 
 ### Babel <a name="babel"></a>
 Revenons sur babel, partie importante de l'architecture de ce projet.
 
 Babel a été mis en place sur ce mockup pour utiliser pleinement les fonctionnalités de TypeORM, ORM choisis sur ce projet. TypeORM est comme son nom l'indique, prévu pour une utilisation TypeScript. Le projet est compatible nativement avec javascript, néanmoins il ne propose de fait que très peut de fonctionnalités modernes et limite énormement sa simplicité d'utilisation et sa capacité à évoluer (pas d'héritage par exemple).
-	Grace à Babel qui compile le javascript comme le ferait typescript, on a la possibilité d'utiliser dans notre application toutes les fonctionnalités de typeorm, hormis les types de typescript bien sur. 
+	Grace à Babel qui compile le javascript comme le ferait typescript, on a la possibilité d'utiliser dans notre application toutes les fonctionnalités de typeorm, hormis les types de typescript bien sur.
 	Nous avons donc accès entités sous formes de classes, aux décorateurs pour déclarer les types dans la base de données, les tailles, si il est nullable, sa valeur par défaut ou pour gérer les relation OneTo ManyTo
-	
+
 ### Les décorateurs <a name="decorators"></a>
 Les décorateurs sont une nouvelles fonctionnalité de javascript qui n'est pas encore au point en terme de performance. Grace à babel on peut s'en servir en "transpilation" en attendant que la fonctionnalité soit prête au grand public des developpeurs.
 
@@ -348,19 +321,19 @@ Son but et de, en fonction des paramètres qui lui sont passés, "construire" un
 
 #### Exemples <a name="exemples"></a>
 
-L'objectif de la mise en place du support des décorateurs n'est pas particulièrement d'en créer de nouveaux, mais plutôt d'en utiliser des existants, néanmoins pour bien en comprendre le fonctionnement, créons en un : 
+L'objectif de la mise en place du support des décorateurs n'est pas particulièrement d'en créer de nouveaux, mais plutôt d'en utiliser des existants, néanmoins pour bien en comprendre le fonctionnement, créons en un :
 ```javascript
 	function MonDecorator(obj) {
 		return function(target) {
 			target.helloWorld = obj.helloworld;
-		}	
+		}
 	}
 
 	@MonDecorator({ helloworld: true })
 	class Test {
 		helloWorld = false;
 	}
-	
+
 	const test = new Test();
 	console.log(test.helloWorld) // true
 ```
@@ -424,8 +397,8 @@ Il prennent tous des paramètres differents, le plus simple est de se referer au
 ### TypeORM <a name="typeorm"></a>
 TypeORM est un des ORM les plus moderne du monde javascript. Il fonctionne sur le même schema que Doctrine, dont il s'inspire, mais profite de la liberté permise par le javascript pour rendre la manipulation de donnée plus simple. Un exemple simple est la facilité déconcertante que demande une serialization / deserialization des entités en json, la gain de ligne incroyable que permet la création et la mise à jour d'entités via les methodes create et update, et la légereté de ne pas avoir à créer des Repository quand il n'y en a pas le besoin.
 
-L'outil propose une documentation très complète, couvrant toutes les utilisation de la technologie, allant des entités, des relations de tous types et de l'utilisation du query builder au travers de repository customs. Il propose également un utilitaire en ligne de commande 
-```bash 
+L'outil propose une documentation très complète, couvrant toutes les utilisation de la technologie, allant des entités, des relations de tous types et de l'utilisation du query builder au travers de repository customs. Il propose également un utilitaire en ligne de commande
+```bash
 $ sudo npm install -g typeorm
 ```
 qui permet de créer de nouvelles entités ou de synchroniser le schema de base avec le schema local.
@@ -460,7 +433,7 @@ Cette entité est celle de l'utilisateur. Elle hérite de AbstractEntity, qui es
 Il existe deux moyens de créer une nouvelle entité, dépendant des cas d'utilisation. Les deux sont utilisés dans l'application actuellement et leurs fonctionnement restent décris sur la documentation de typeorm.
 
 ##### Manière 1 <a name="method1"></a>
-```javascript 
+```javascript
 
 const user = new User();
 user.firstName = "Lucas";
@@ -474,7 +447,7 @@ if (result) {
 ```
 
 ##### Manière 2 <a name="method2"></a>
-```javascript 
+```javascript
 
 const user = getRepository(User).create({
 	firstName = "Lucas",
@@ -498,7 +471,7 @@ est bien plus pertinante !
 #### Rechercher <a name="typeorm.find"></a>
 
 La recherche de typeorm est assez simple et ressemble à Doctrine.
-Elle se produit de cette manière : 
+Elle se produit de cette manière :
 ```javascript
 	const repo = getRepository(User);
 	const results = await repo.find({
