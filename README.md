@@ -39,8 +39,10 @@ Wed&Joy tree
 2. [Fonctionnement](#fonctionnement)
 	1. [Exemple](#fonctionnement.exemple)
 3. [Le javascript async moderne](#modernjs)
-
-4. [Installer et utiliser TypeORM, babel avec NodeJS (sans typescript !)](#tybano)
+4. [Créer une route express, chemin complet](#routing)
+5. [L'authentification avec passport et vuex](#passport)
+6. [Point sur l'ajax](#ajax)
+7. [Installer et utiliser TypeORM, babel avec NodeJS](#tybano)
 	1. [Babel](#babel)
 	2. [Les décorateurs](#decorators)
 		1. [Exemples](#exemples)
@@ -303,8 +305,174 @@ async homeAction(req, res) {
 ```
 Le code est plus facile à comprendre, et ne comprend plus de lignes inutiles. Evidement c'est à utiliser que quand l'asynchrone n'est pas nécessaire, car il s'agit néanmoins d'un comportement très utile selon les cas.
 
-## TypeORM, les décorateurs et babel <a name="tybano"></a>
+## Créer une route express, chemin complet
+On commence par créer un controlleur si il n'existe pas dans src/Controllers :
+```javascript
 
+"use strict";
+
+import {Controller, Get, Request, Response} from "@decorators/express";
+import HtmlRes from "../Middlewares/htmlRes";
+
+@Controller('/') // Le prefixe de l'URL de ce controlleur
+export default class FrontController {
+
+    @Get('/', [HtmlRes]) // Le decorateur pour déclarer une GET avec un middleware
+    indexAction(req, res) {
+        return res.render("index.html");
+    }
+
+    @Get('/test') // Tous les decorateurs @Post, @Put etc. fonctionnent de la même manière
+    testAction(req, res) {
+			  /*
+				 * On recoit req et res.
+				 * Pour récupérer le contenu d'une requête, on utilise
+				 * req.body qui est un objet clé valeur de nos données
+				 * On peut utiliser req.headers, nottament dans les Middlewares
+				 * pour vérifier l'auth ou le type de requête
+				 * Pour récupérer un paramètre d'URL dans le cas d'un get on utilise
+				 * req.params comme body.
+				 */
+        return res.json({test: 'ok'});
+    }
+
+}
+
+```
+
+Il est ensuite nécessaire d'enregister ce controlleur dans src/App/router.js :
+```javascript
+
+// On créer un router express classique, commun à toutes nos routes d'API (ajax)
+// Il est deja créé dans le fichier router.js, il ne reste qu'à le compléter comme décris en dessous
+
+import FrontController from '../Controllers/FrontController';
+
+const apiRouter = new express.Router();
+
+attachControllers(apiRouter, [
+
+		/*
+		 * On passe dans ce tableau toutes les classes de nos controlleurs
+		 */
+		 FrontController
+		 // Désormais front controller est enregistré dans notre routeur express
+
+]);
+
+// Enfin on passe notre router express à express lui même.
+// On peut passer des middlewares qui seront executés à chaque requête du router. Par exemple pour api router on oblige l'utilisateur à être connecté, ce qui n'est pas le cas du public router par exemple.
+// On peut créer autant de routeur que l'on a besoin, mais je pense que 2 suffisent.
+app.use('/api', checkAuthMiddleWare, jsonResMiddleware.use, apiRouter);
+
+```
+
+## L'authentification avec passport.js
+Passport fonctionne sur un système appellé les "Stategie".
+Il en existe plusieurs, les deux que nous utilisons sont
+"local strategy" qui est prévue pour une connexion classique, elle prend un field username et password
+Nous utisons egalement "jwt strategy" pour vérifier le token de l'utilisateur (la stratégie le fait toute seule, elle nous passe le payload en cas de succès pour que l'on puisse vérifier que l'utilisateur existe)
+
+Les stratégies sont dans src/App/passport.
+
+Le fonctionnement global de l'auth est le suivant :
+L'utilisateur se connecte en envoyant en POST son nom de compte et mot de passe à la route UserController@login.
+La route declenche la stratégie passport local-login, ce qui génère un payload, le transforme en json web token et le retourne à la vue.
+
+Dans la vue, la fonction de connexion qui effectue l'ajax POST est dans un equivalent de passport, du moins qui peut être utilisé comme, Vuex.
+Le fichier est /public/Vue/src/store.js
+A la reception de la confirmation de connexion, le store va :
+1. Configurer axios pour lui ajouter le header d'authentification sous cette forme : "Bearer le_token"
+2. Sauvegarder dans "l'état de l'application" (le state dans le code) l'user id, le role et si il est connecté ou non.
+3. Sauvegarder dans le localstorage le token
+(3.) Evidement, à l'initialisation du store on vérifie si le token est dans le local storage pour restaurer la session de l'utilisateur, rendant le state persistant au rechargement de page, fermeture du navigateur temporaire etc.
+4. Le store est reactif, autrement dis, dans le html :
+```html
+<template v-if="store.isLoggedIn">
+	Est connecté
+</template>
+<template v-else>Pas connecté</template>
+```
+Va changer "par magie" à la connexion de l'utilisateur. Pas besoin d'emettre d'events global compliqués à maintenir et à lire.
+
+> Note : Il ne faut pas en abuser non plus, et garder à l'esprit qu'il n'y a qu'un seul store pour une application. Il ne faut pas le surcharger avec des échanges "locaux" (par exemple les échanges entre un parent et son fils. Il est preferable d'utiliser ou d'implémenter v-model pour ces cas)
+Les store doivent être utiliser pour "partager des données" de type "paramètres". Par exemple savoir si l'utilisateur est connecté / son role, ou par exemple la langue ou d'autre paramètres concernant "toute l'application".
+
+## Point sur l'ajax
+
+Il n'y a pas grand chose à dire sur l'ajax en soit :
+```
+axios({ url: config.api.getServerUrl() + 'users', method: "GET" }).then(response => {
+	this.list = response.data.data;
+});
+
+```
+Si l'utilisateur est connecté, il a deja les bons headers avec le token, du coup il n'y a rien de special à gérer par rapport à avant.
+La seule difference est l'utilisation du module local "config" qui contient une methode getServerUrl qui permet d'obtenir une URL depuis "un fichier de config".
+
+Pour une mise en production ça permet de remplacer "localhost" par le nom de domaine du serveur de production en ne changeant l'information qu'à seul endroit.
+
+## Vue class component
+Le projet implémente désormais Vue class component, le plugin officiel phare de Vue.js.
+Tout est résummé en quelques lignes à cette addresse https://github.com/vuejs/vue-class-component
+Un exemple sur le projet est disponible sur le composant "LoginBox".
+
+L'idée est de remplacer la strucrure :
+```javascript
+
+Vue.component({
+
+	props: [
+
+	],
+	data() {
+		return {
+
+		}
+	},
+	methods: {
+
+	},
+	computed: {
+
+	}
+
+});
+
+```
+
+par :
+```javascript
+
+@Component()
+class MyComponent extends Vue {
+	@Prop monProp;
+
+	maData = "test";
+	maAutre = undefined;
+
+	maMethode() {
+
+	}
+
+	set monComputedSetter() { // btw j'ai jamais réussi à faire marcher ça avec l'ancien style d'écriture avec data() etc. Meme avec ce système ça marche :)
+
+	}
+
+	get monComputedGetter() {
+
+	}
+}
+
+```
+
+Le résultat est plus moderne et permet de faire de l'héritage, et donc de plus facilement architecturer son code en vue de le réutiliser.
+(par exemple on peut créer un component "AbstractComponent" qui hérite de vue, puis faire heriter MyComponent de AbstractComponent a la place de Vue)
+MyComponent sera comme AbstractComponent, mais avec des trucs en plus qui lui sont propre. Ce principe peut être éxploité à l'infinie.
+
+> Bonus : Du coup fini d'oublier des , entre les blocs d'un composant ;)
+
+## TypeORM, les décorateurs et babel <a name="tybano"></a>
 Pour installer babel et le rendre compatible avec typeORM, il est nécessaire de vérifier dans le package.json que babel et ses composants sont en version 7.2.0 ou compatible.
  Si le package.json est deja près ou récuperé sur le github du projet Wed&Joy, alors il suffit de faire un npm install pour installer les dépendances de babel.
  Il est également important de reproduire la configuration décrite dans le fichier de configuration de babel : babelrc.
@@ -366,7 +534,7 @@ Pour installer babel et le rendre compatible avec typeORM, il est nécessaire de
    ]
  }
  ```
- 
+
 ### Babel <a name="babel"></a>
 Revenons sur babel, partie importante de l'architecture de ce projet.
 
@@ -543,3 +711,30 @@ Elle se produit de cette manière :
 	console.log(results.length) // 2
 ```
 Il est également possible de trouver à partir de relations et de faire des jonctions, ou de selectionner que les fields interessants (par exemple que l'ID) et même utiliser des opérateurs de recherche complete comme with, ou faire des récuperations en fonction de date ou d'écheances.
+
+## Mise en production
+Voici les étapes de mise en production :
+
+1. Compiler la vue : npm run build.
+Cela va créer un dossier dist dans public/Vue qui contient la version packagée de notre application.
+2. Compiler le serveur : on fais comme si on voulais le lancer, donc npm start, on attend qu'il compile et se lance, ctrl + c : le dossier app a été créé, mais on ne va pas laisser le serveur tourner "en mode dev", sinon il va pas tourner longtemps ...
+3. En utilisant le package PM2 (voir ci dessous pour l'installer) on peut lancer un projet nodejs "en serveur mode". Si on se contente de faire un npm start, le serveur node va se couper dès que l'on se deconnectera de notre session SSH :
+	```bash
+		pm2 start ./launcher.bundle.js
+	```
+
+> Info : Pourquoi ne pas utiliser apache ou nginx comme avant avec PHP ?
+node a un fonctionnement un peu different de PHP. Node est le serveur, alors qu'en PHP on utilise un serveur comme apache ou nginx pour servir le client. C'est apache et nginx qui vont "transférer la requête à php" et php qui va répondre en utilisant notre code toujours en passant par ngapaxe2 
+Pour node tout est "inclus" dans le package node.
+Ici pm2 est juste un système pour "sandboxer" l'application, et la relancer en cas de crash (ce qui peut arriver en cas d'erreurs fatales non gérés).
+
+
+*Pour installer pm2 :*
+```bash
+# En root ou sudo
+npm install -g pm2
+```
+
+> Note : Il existe beaucoups de solutions pour faire tourner node.js en production. La plus simple est pm2, car lors d'une mise à jour de la version en production, il suffit de remplacer le code et de faire pm2 restart <nom>.
+
+> Note 2 : voir pm2 pour une liste des commandes, certaines sont très utiles comme pm2 list pour voir les applications qui tournent, stop pour arreter, et surtout monit qui ouvre une interface user_friendly pour surveiller le fonctionnement de l'app.
