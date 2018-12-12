@@ -334,6 +334,12 @@ export default class FrontController {
 				 * req.params comme body.
 				 */
         return res.json({test: 'ok'});
+
+				/*
+				 * pour res on peut préciser le status de la requête de cette manière
+				 * res.status(200).json...
+				 * Ca permet de retourner une erreur 403 par exemple si l'user n'est pas autorisé, ce genre de chose (404 pour ressources non trouvée etc.)
+				 */
     }
 
 }
@@ -724,7 +730,7 @@ Cela va créer un dossier dist dans public/Vue qui contient la version packagée
 	```
 
 > Info : Pourquoi ne pas utiliser apache ou nginx comme avant avec PHP ?
-node a un fonctionnement un peu different de PHP. Node est le serveur, alors qu'en PHP on utilise un serveur comme apache ou nginx pour servir le client. C'est apache et nginx qui vont "transférer la requête à php" et php qui va répondre en utilisant notre code toujours en passant par ngapaxe2 
+node a un fonctionnement un peu different de PHP. Node est le serveur, alors qu'en PHP on utilise un serveur comme apache ou nginx pour servir le client. C'est apache et nginx qui vont "transférer la requête à php" et php qui va répondre en utilisant notre code toujours en passant par ngapaxe2
 Pour node tout est "inclus" dans le package node.
 Ici pm2 est juste un système pour "sandboxer" l'application, et la relancer en cas de crash (ce qui peut arriver en cas d'erreurs fatales non gérés).
 
