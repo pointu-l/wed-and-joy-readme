@@ -305,7 +305,7 @@ L'objectif de la mise en place du support des décorateurs n'est pas particuliè
 ```
 
 Voila basiquement un résultat possible de babel :
-```babel
+```javascript
 
 "use strict";
 
