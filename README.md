@@ -407,7 +407,7 @@ Les store doivent être utiliser pour "partager des données" de type "paramètr
 ## Point sur l'ajax
 
 Il n'y a pas grand chose à dire sur l'ajax en soit :
-```
+```javascript
 axios({ url: config.api.getServerUrl() + 'users', method: "GET" }).then(response => {
 	this.list = response.data.data;
 });
