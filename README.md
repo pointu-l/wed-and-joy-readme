@@ -197,11 +197,11 @@ Pour créer une promise, c'est finalement très simple :
 		});
    }
 
-   const maPromiseSQl = monAppelSql();
-	console.log(typeof maPromiseSQL) // "Promise"
-	maPromiseSQL.then(function(data) {
-		// ...
-	});
+const maPromiseSQl = monAppelSql();
+console.log(typeof maPromiseSQL) // "Promise"
+maPromiseSQL.then(function(data) {
+	// ...
+});
 ```
 
 C'est une modification bienvenue, car elle apporte une certaine constance à l'asynchrone et un type spécial "Promise" pour le reconnaitre.
