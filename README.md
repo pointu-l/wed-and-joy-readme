@@ -143,7 +143,7 @@ Mais cela a également posé un gros problème d'architecture de code pendant pl
 					final.push(result.id)	
 					result.isOk = true;
 					
-					var newQuery = db->("UPDATE USER ...);
+					var newQuery = db->("UPDATE USER ...");
 					newQuery.on('end', function(error) {
 						if (!error)
 							res.send("ok !");
